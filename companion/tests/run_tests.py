@@ -39,10 +39,14 @@ if args.e2e:
     core = out / "companion_testcore.so"
     run(cc + ["-shared", "-fPIC", "-O2", "-D_GNU_SOURCE"] + includes + [str(root / "companion/tests/e2e_testcore.c"), "-ldl", "-o", str(core)])
     (out / "testgame.gba").write_bytes(b"companion-test-fixture")
-    (out / "test.cfg").write_text('video_driver = "null"\naudio_driver = "null"\ninput_driver = "null"\nmenu_driver = "null"\nvideo_threaded = "false"\n')
+    (out / "test.cfg").write_text('video_driver = "null"\naudio_driver = "null"\ninput_driver = "null"\nmenu_driver = "null"\nvideo_threaded = "false"\npause_nonactive = "false"\n')
     env = dict(os.environ, COMPANION_JVM_LIB=str(jdk / "lib/server/libjvm.so"))
-    result = run([str(args.e2e.resolve()), "--config", str(out / "test.cfg"), "-L", str(core), str(out / "testgame.gba")],
-                 env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=90)
+    try:
+        result = run([str(args.e2e.resolve()), "--verbose", "--config", str(out / "test.cfg"), "-L", str(core), str(out / "testgame.gba")],
+                     env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=90)
+    except subprocess.TimeoutExpired as error:
+        print((error.stdout or b"").decode(errors="replace"), flush=True)
+        raise
     print(result.stdout)
     if "E2E RESULT: PASS" not in result.stdout:
         raise SystemExit("In-RetroArch E2E test did not pass")
