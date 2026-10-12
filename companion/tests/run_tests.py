@@ -39,7 +39,7 @@ if args.e2e:
     core = out / "companion_testcore.so"
     run(cc + ["-shared", "-fPIC", "-O2", "-D_GNU_SOURCE"] + includes + [str(root / "companion/tests/e2e_testcore.c"), "-ldl", "-o", str(core)])
     (out / "testgame.gba").write_bytes(b"companion-test-fixture")
-    (out / "test.cfg").write_text('video_driver = "null"\naudio_driver = "null"\ninput_driver = "null"\nmenu_driver = "null"\nvideo_threaded = "false"\npause_nonactive = "false"\n')
+    (out / "test.cfg").write_text('video_driver = "null"\naudio_driver = "null"\ninput_driver = "null"\nmenu_driver = "null"\nvideo_threaded = "false"\npause_nonactive = "false"\nload_dummy_on_core_shutdown = "false"\n')
     env = dict(os.environ, COMPANION_JVM_LIB=str(jdk / "lib/server/libjvm.so"))
     try:
         result = run([str(args.e2e.resolve()), "--verbose", "--config", str(out / "test.cfg"), "-L", str(core), str(out / "testgame.gba")],
