@@ -77,6 +77,18 @@ android {
         abiFilters 'arm64-v8a', 'x86_64'
       }
     }
+    thor {
+      // AYN Thor build: installs next to regular RetroArch, bottom-screen
+      // companion on by default (see companion/ and browser/companion/)
+      applicationIdSuffix '.thor'
+      resValue "string", "app_name", "RetroArch Thor"
+      buildConfigField "boolean", "PLAY_STORE_BUILD", "false"
+
+      dimension "variant"
+      ndk {
+        abiFilters 'arm64-v8a'
+      }
+    }
     ra32 {
       applicationIdSuffix '.ra32'
       resValue "string", "app_name", "RetroArch (32-bit)"
@@ -170,6 +182,10 @@ android {
     ra32 {
       java.srcDirs += ['../play-core-stub']
     }
+    thor {
+      java.srcDirs += ['../play-core-stub']
+      res.srcDirs = ['res', 'res64']
+    }
     playStoreNormal {
       java.srcDirs += ['../play-core-impl']
     }
@@ -212,6 +228,10 @@ android {
   }
 }
 
+dependencies {
+  implementation project(':companion-api')
+}
+
 def playFeatureDelivery = 'com.google.android.play:feature-delivery:2.1.0'
 def playAssetDelivery = 'com.google.android.play:asset-delivery:2.2.2'
 
@@ -228,6 +248,14 @@ dependencies {
     playStoreNormalImplementation 'androidx.fragment:fragment:1.8.6'
     playStorePlusImplementation 'androidx.activity:activity:1.10.1'
     playStorePlusImplementation 'androidx.fragment:fragment:1.8.6'
+  }
+}
+
+// Thor Game Hub (or any CompanionScreen library) bundled into the thor
+// flavor when settings.gradle includes it as :thorhub
+if (findProject(':thorhub') != null) {
+  dependencies {
+    thorImplementation project(':thorhub')
   }
 }
 

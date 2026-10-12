@@ -1,0 +1,1 @@
+package android.view; public class ViewGroup extends View { public java.util.List<View> kids = new java.util.ArrayList<>(); public ViewGroup(android.content.Context c) { super(c); } public void addView(View v) { kids.add(v); } }

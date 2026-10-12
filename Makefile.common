@@ -3130,3 +3130,11 @@ ifneq ($(findstring Win32,$(OS)),)
       endif
    endif
 endif
+
+# Thor dual-screen companion bridge (Android uses griffin; this is for
+# desktop test builds: make HAVE_COMPANION_BRIDGE=1 with jni.h on the path)
+ifeq ($(HAVE_COMPANION_BRIDGE), 1)
+   DEFINES += -DHAVE_COMPANION_BRIDGE
+   OBJ += companion/companion_bridge.o
+   INCLUDE_DIRS += $(COMPANION_JNI_INC)
+endif

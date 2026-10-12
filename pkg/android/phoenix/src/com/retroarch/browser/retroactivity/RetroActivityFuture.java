@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import com.retroarch.browser.companion.CompanionController;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -34,6 +35,9 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
   // Top-level window decor view
   private View mDecorView;
+
+  // Thor dual-screen companion: bottom screen, on by default
+  private CompanionController mCompanion;
 
   // Constants used for Handler messages
   private static final int HANDLER_WHAT_TOGGLE_IMMERSIVE = 1;
@@ -68,6 +72,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     
     isRunning = true;
     mDecorView = getWindow().getDecorView();
+    mCompanion = new CompanionController(this);
 
     // If QUITFOCUS parameter is provided then enable that Retroarch quits when focus is lost
     quitfocus = getIntent().hasExtra("QUITFOCUS");
@@ -232,8 +237,16 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   }
 
   @Override
+  public void onStart() {
+    super.onStart();
+    if (mCompanion != null) mCompanion.start();
+  }
+
+  @Override
   public void onStop() {
     super.onStop();
+
+    if (mCompanion != null) mCompanion.stop();
 
     // If QUITFOCUS parameter was set then completely exit RetroArch when focus is lost
     if (quitfocus) System.exit(0);

@@ -84,6 +84,9 @@ ifeq ($(TARGET_ARCH),mips)
    DEFINES += -DANDROID_MIPS -D__mips__ -D__MIPSEL__
 endif
 
+# Thor dual-screen companion bridge (direct core memory over JNI)
+DEFINES += -DHAVE_COMPANION_BRIDGE
+
 LOCAL_MODULE := retroarch-activity
 
 LOCAL_SRC_FILES  +=	$(RARCH_DIR)/griffin/griffin.c \

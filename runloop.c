@@ -122,6 +122,9 @@ bool android_get_vfs_authorized_locations(
 
 #include "runtime_file.h"
 #include "runloop.h"
+#ifdef HAVE_COMPANION_BRIDGE
+#include "companion/companion_bridge.h"
+#endif
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
@@ -10673,6 +10676,10 @@ void core_run(void)
       if (runloop_st->auto_state_load_pending)
          runloop_st->auto_state_load_core_ran = true;
       audio_driver_frame_end();
+#ifdef HAVE_COMPANION_BRIDGE
+      /* Thor companion: snapshot watched RAM for the bottom screen. */
+      companion_bridge_on_frame();
+#endif
    }
 
 #ifdef HAVE_GAME_AI

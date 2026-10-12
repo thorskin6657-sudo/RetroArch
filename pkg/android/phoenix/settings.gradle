@@ -1,0 +1,19 @@
+pluginManagement {
+  repositories {
+    google()
+    mavenCentral()
+    gradlePluginPortal()
+  }
+}
+
+// Interfaces shared with companion screen libraries (Thor build)
+include ':companion-api'
+project(':companion-api').projectDir = new File(settingsDir, '../companion-api')
+
+// Optional: bundle Thor Game Hub's companion library into the "thor"
+// flavor. Set thorHubDir (in ~/.gradle/gradle.properties, or with
+// -PthorHubDir=/path) to the hub's Android *library* module folder.
+if (settings.hasProperty('thorHubDir')) {
+  include ':thorhub'
+  project(':thorhub').projectDir = new File(settings.thorHubDir)
+}

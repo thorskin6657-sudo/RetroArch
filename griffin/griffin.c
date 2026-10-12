@@ -1486,6 +1486,9 @@ RETROARCH
 #include "../runahead.c"
 #endif
 #include "../command.c"
+#ifdef HAVE_COMPANION_BRIDGE
+#include "../companion/companion_bridge.c"
+#endif
 #if defined(HAVE_MCP) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
 #include "../network/mcp_server.c"
 #endif

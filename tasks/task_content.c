@@ -111,6 +111,9 @@ void win32_window_release_kept(void);
 #include "../command.h"
 #include "../core_info.h"
 #include "../content.h"
+#ifdef HAVE_COMPANION_BRIDGE
+#include "../companion/companion_bridge.h"
+#endif
 #include "../core.h"
 #include "../configuration.h"
 #include "../defaults.h"
@@ -3872,6 +3875,10 @@ bool content_is_inited(void)
 void content_deinit(void)
 {
    content_state_t *p_content = content_state_get_ptr();
+
+#ifdef HAVE_COMPANION_BRIDGE
+   companion_bridge_on_content_unloaded();
+#endif
 
    content_file_override_free(p_content);
    content_file_list_free(p_content->content_list);

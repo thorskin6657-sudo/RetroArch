@@ -1,0 +1,13 @@
+// The two interfaces shared between RetroArch Thor and companion
+// screen libraries (Thor Game Hub). RetroArch bundles this module; a
+// companion library should depend on it with compileOnly.
+apply plugin: 'com.android.library'
+
+android {
+  namespace "com.retroarch.companion.api"
+  compileSdkVersion 36
+
+  defaultConfig {
+    minSdkVersion 21
+  }
+}
