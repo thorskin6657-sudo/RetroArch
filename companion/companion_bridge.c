@@ -214,6 +214,14 @@ void companion_bridge_on_frame(void)
       return;
 
    runloop_st = runloop_state_get_ptr();
+   if (runloop_st->current_core_type == CORE_TYPE_DUMMY)
+   {
+      cb_st.content_loaded = 0;
+      cb_st.status[0] = '\0';
+      memset(cb_st.valid, 0, sizeof(cb_st.valid));
+      pthread_mutex_unlock(&cb_st.lock);
+      return;
+   }
 
    if (!cb_st.content_loaded || cb_st.frames_since_status >= CB_STATUS_EVERY)
    {

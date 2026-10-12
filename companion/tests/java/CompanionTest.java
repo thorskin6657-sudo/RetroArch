@@ -213,6 +213,8 @@ public class CompanionTest {
       check(b.read(0xC000, 4) == null && b.read(0x80000000, 4) == null,
           "unknown/null/mapped core must not use fallback mode " + mode);
     }
+    nativeMode(7); frame(24);
+    check(b.getFrame() == -1 && b.getStatus() == null, "dummy menu core does not reopen companion");
     System.out.println("JAVA RESULT: " + (fails == 0 ? "PASS" : "FAIL") + " (" + checks + " checks, " + fails + " failures)");
     System.exit(fails == 0 ? 0 : 1);
   }

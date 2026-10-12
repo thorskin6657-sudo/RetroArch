@@ -55,6 +55,7 @@ JNIEXPORT void JNICALL Java_CompanionTest_nativeStep(JNIEnv *e, jclass c, jint f
 JNIEXPORT void JNICALL Java_CompanionTest_nativeMode(JNIEnv *e, jclass c, jint value) {
    companion_bridge_on_content_unloaded();
    mode = (unsigned)value;
+   st.current_core_type = mode == 7 ? CORE_TYPE_DUMMY : CORE_TYPE_PLAIN;
    st.system.mmaps.descriptors = NULL;
    st.system.mmaps.num_descriptors = 0;
    st.system.info.library_name = mode == 1 || mode == 2 ? "Gambatte"
