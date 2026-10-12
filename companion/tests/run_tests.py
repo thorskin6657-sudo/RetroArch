@@ -10,9 +10,10 @@ root = Path(__file__).resolve().parents[2]
 out = root / "companion/tests/build"
 out.mkdir(exist_ok=True)
 jdk = Path(os.environ["JAVA_HOME"])
+jni = Path(os.environ.get("COMPANION_JNI_INCLUDE", str(jdk / "include")))
 cc = shlex.split(os.environ.get("CC", "gcc"))
 platform = "win32" if os.name == "nt" else "linux"
-includes = ["-I" + str(p) for p in (root, root / "libretro-common/include", jdk / "include", jdk / "include" / platform)]
+includes = ["-I" + str(p) for p in (root, root / "libretro-common/include", jni, jni / platform)]
 
 def run(args, **kwargs):
     print("+", " ".join(str(a) for a in args), flush=True)
@@ -23,7 +24,8 @@ parser.add_argument("--e2e", type=Path)
 args = parser.parse_args()
 run(cc + ["-shared", "-O2", "-pthread"] + ([] if os.name == "nt" else ["-fPIC"]) + includes +
     [str(root / p) for p in ("companion/tests/java/mock_runloop.c", "companion/companion_bridge.c",
-                            "libretro-common/string/stdstring.c", "libretro-common/compat/compat_strl.c")] +
+                            "libretro-common/string/stdstring.c", "libretro-common/compat/compat_strl.c",
+                            "libretro-common/encodings/encoding_utf.c")] +
     ["-o", str(out / "libretroarch-activity.so")])
 sources = list((root / "companion/tests/java/stubs").rglob("*.java"))
 sources += list((root / "pkg/android/companion-api/src/main/java").rglob("*.java"))
@@ -35,7 +37,7 @@ if args.e2e:
     if os.name == "nt":
         raise SystemExit("The in-RetroArch runner requires Linux; JNI/Java tests support both platforms.")
     core = out / "companion_testcore.so"
-    run(cc + ["-shared", "-fPIC", "-O2"] + includes + [str(root / "companion/tests/e2e_testcore.c"), "-ldl", "-o", str(core)])
+    run(cc + ["-shared", "-fPIC", "-O2", "-D_GNU_SOURCE"] + includes + [str(root / "companion/tests/e2e_testcore.c"), "-ldl", "-o", str(core)])
     (out / "testgame.gba").write_bytes(b"companion-test-fixture")
     (out / "test.cfg").write_text('video_driver = "null"\naudio_driver = "null"\ninput_driver = "null"\nmenu_driver = "null"\nvideo_threaded = "false"\n')
     env = dict(os.environ, COMPANION_JVM_LIB=str(jdk / "lib/server/libjvm.so"))
