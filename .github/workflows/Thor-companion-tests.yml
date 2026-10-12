@@ -1,0 +1,45 @@
+name: Thor companion tests
+
+on:
+  push:
+    branches: [thor-companion]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  java-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: temurin
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          install: mingw-w64-x86_64-gcc
+      - name: JNI and Java tests (Windows/MinGW)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
+          python companion/tests/run_tests.py
+      - name: Build headless RetroArch (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          ./configure --disable-menu --disable-x11 --disable-wayland --disable-alsa --disable-pulse --disable-jack --disable-sdl --disable-sdl2 --disable-vulkan --disable-opengl --disable-opengles --disable-egl --disable-qt --disable-ffmpeg --disable-udev --disable-dbus
+          make -j2 HAVE_COMPANION_BRIDGE=1 COMPANION_JNI_INC="-I$JAVA_HOME/include -I$JAVA_HOME/include/linux"
+      - name: JNI/Java and in-RetroArch E2E tests (Linux)
+        if: runner.os == 'Linux'
+        run: python companion/tests/run_tests.py --e2e ./retroarch
