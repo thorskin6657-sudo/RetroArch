@@ -10,6 +10,9 @@ package com.thor.gamehub.retroarch
 import com.thor.gamehub.ui.HubViewModel
 import com.thor.gamehub.ui.HubScreen
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import android.content.Context
 import android.view.View
 import androidx.compose.ui.platform.ComposeView
@@ -46,7 +49,7 @@ class ThorHubCompanionScreen : CompanionScreen {
             setViewTreeViewModelStoreOwner(o)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             setContent {
-                MaterialTheme { HubScreen(model) }
+                MaterialTheme { Surface(Modifier.fillMaxSize()) { HubScreen(model) } }
             }
         }
     }
