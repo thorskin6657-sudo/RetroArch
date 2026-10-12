@@ -350,6 +350,7 @@ __pycache__/
 *.pyc
 companion/tests/build/
 pkg/android/companion-api/build/
+companion/tests/hub-fixture/build/
 samples/audio/asio_clock/asio_clock_driver.h
 samples/gfx/integer_scale_axis/integer_scale_driver.h
 samples/gfx/coord_array/coord_array_driver.h

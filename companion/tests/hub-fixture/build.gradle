@@ -1,0 +1,9 @@
+apply plugin: 'com.android.library'
+android {
+  namespace 'com.retroarch.companion.fixture'
+  compileSdkVersion 36
+  defaultConfig { minSdkVersion 21 }
+}
+dependencies {
+  compileOnly project(':companion-api')
+}
