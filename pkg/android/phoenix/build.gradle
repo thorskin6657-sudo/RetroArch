@@ -6,6 +6,9 @@ buildscript {
 
   dependencies {
     classpath 'com.android.tools.build:gradle:9.1.0'
+    if (project.hasProperty('thorHubDir')) {
+      classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.2.10'
+    }
   }
 }
 
@@ -81,6 +84,9 @@ android {
       // AYN Thor build: installs next to regular RetroArch, bottom-screen
       // companion on by default (see companion/ and browser/companion/)
       applicationIdSuffix '.thor'
+      if (findProject(':thorhub') != null) {
+        minSdkVersion 26
+      }
       resValue "string", "app_name", "RetroArch Thor"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "false"
 
@@ -204,6 +210,14 @@ android {
   }
 
   signingConfigs {
+    if (project.hasProperty('thorDebugKeystore')) {
+      debug {
+        storeFile file(project.property('thorDebugKeystore'))
+        storePassword 'android'
+        keyAlias 'androiddebugkey'
+        keyPassword 'android'
+      }
+    }
     if (project.hasProperty("RELEASE_STORE_FILE")) {
       release {
         storeFile file(RELEASE_STORE_FILE)

@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <meta-data android:name="com.retroarch.companion.SCREEN"
+        android:value="com.thor.gamehub.retroarch.ThorHubCompanionScreen" />
+  </application>
+</manifest>
