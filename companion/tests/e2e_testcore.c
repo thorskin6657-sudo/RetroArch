@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <dlfcn.h>
 #include <jni.h>
 #include "libretro.h"
@@ -22,7 +23,8 @@ static set_t f_set; static snap_t f_snap; static stat_t f_stat;
 #define CHECK(c, ...) do { checks++; if (!(c)) { fails++; fprintf(stderr, "FAIL f%u: ", frame); fprintf(stderr, __VA_ARGS__); fputc('\n', stderr);} } while(0)
 
 static void start_jvm(void) {
-   void *h = dlopen("/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so", RTLD_NOW|RTLD_GLOBAL);
+   const char *jvm = getenv("COMPANION_JVM_LIB");
+   void *h = dlopen(jvm ? jvm : "/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so", RTLD_NOW|RTLD_GLOBAL);
    jint (*create)(JavaVM**, void**, void*) = h ? dlsym(h, "JNI_CreateJavaVM") : NULL;
    JavaVMInitArgs a = {0}; JavaVM *vm; a.version = JNI_VERSION_1_8;
    if (!create || create(&vm, (void**)&jenv, &a) != JNI_OK) { fprintf(stderr, "no JVM\n"); fails++; return; }

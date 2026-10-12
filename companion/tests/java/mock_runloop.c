@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <jni.h>
+#include <retro_endianness.h>
 #include "runloop.h"
 #include "core_info.h"
 #include "paths.h"
@@ -13,9 +14,23 @@ static rarch_memory_descriptor_t descs[2];
 static uint8_t ewram[256*1024], iwram[32*1024];
 static char base[64] = "Oracle of Seasons (USA)";
 static core_info_t ci;
+static unsigned mode;
+static uint8_t fallback_ram[0x8000];
+static void *test_memory_data(unsigned id)
+{
+   return id == RETRO_MEMORY_SYSTEM_RAM && mode != 5 ? fallback_ram : NULL;
+}
+static size_t test_memory_size(unsigned id)
+{
+   return id == RETRO_MEMORY_SYSTEM_RAM ? (mode == 2 ? 0x8000 : 0x2000) : 0;
+}
 
 runloop_state_t *runloop_state_get_ptr(void) { return &st; }
-bool core_info_get_current_core(core_info_t **c) { ci.system_id = "game_boy_advance"; *c = &ci; return true; }
+bool core_info_get_current_core(core_info_t **c) {
+   ci.system_id = mode == 1 ? "game_boy" : mode == 2 ? "game_boy_color"
+      : mode == 3 || mode == 5 ? "nintendo_64" : mode == 4 ? "unknown" : "game_boy_advance";
+   *c = &ci; return true;
+}
 const char *path_get(enum rarch_path_type t) { return base; }
 
 static void setup(void) {
@@ -26,12 +41,27 @@ static void setup(void) {
 }
 
 JNIEXPORT void JNICALL Java_CompanionTest_nativeStep(JNIEnv *e, jclass c, jint frameValue) {
-   if (!st.system.mmaps.descriptors) setup();
+   int i;
+   if (!mode && !st.system.mmaps.descriptors) setup();
    /* game writes: counter at 0x02000100, a byte table at 0x02000200.. */
    memcpy(ewram + 0x100, &frameValue, 4);
-   for (int i = 0; i < 64; i++) ewram[0x200 + i] = (uint8_t)(frameValue + i);
+   for (i = 0; i < 64; i++) ewram[0x200 + i] = (uint8_t)(frameValue + i);
    iwram[0x10] = (uint8_t)(frameValue * 7);
+   for (i = 0; i < (mode == 2 ? 0x8000 : 0x2000); i++)
+      fallback_ram[i ^ (mode == 3 && is_little_endian() ? 3 : 0)]
+         = (uint8_t)(frameValue + i);
    companion_bridge_on_frame();
+}
+JNIEXPORT void JNICALL Java_CompanionTest_nativeMode(JNIEnv *e, jclass c, jint value) {
+   companion_bridge_on_content_unloaded();
+   mode = (unsigned)value;
+   st.system.mmaps.descriptors = NULL;
+   st.system.mmaps.num_descriptors = 0;
+   st.system.info.library_name = mode == 1 || mode == 2 ? "Gambatte"
+      : mode == 3 || mode == 5 ? "Mupen64Plus-Next" : "TestUnknown";
+   st.current_core.retro_get_memory_data = test_memory_data;
+   st.current_core.retro_get_memory_size = test_memory_size;
+   if (mode == 6) setup();
 }
 JNIEXPORT void JNICALL Java_CompanionTest_nativeUnload(JNIEnv *e, jclass c) { companion_bridge_on_content_unloaded(); }
 JNIEXPORT void JNICALL Java_CompanionTest_nativeSetRom(JNIEnv *e, jclass c, jstring s) {

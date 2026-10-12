@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <retro_endianness.h>
 
 #include <jni.h>
 
@@ -48,6 +49,61 @@ typedef struct
 static cb_state_t cb_st = {
    PTHREAD_MUTEX_INITIALIZER
 };
+
+typedef struct
+{
+   const uint8_t *data;
+   size_t size;
+   uint32_t base;
+   unsigned byte_xor;
+} cb_ram_t;
+
+static int cb_system_ram(runloop_state_t *st, cb_ram_t *ram)
+{
+   core_info_t *info = NULL;
+   const char *system;
+   const char *name = st->system.info.library_name;
+   int gb, n64;
+
+   core_info_get_current_core(&info);
+   system = info ? info->system_id : NULL;
+   gb = (system && (!strcmp(system, "game_boy")
+         || !strcmp(system, "game_boy_color")
+         || !strcmp(system, "gb") || !strcmp(system, "gbc")))
+      || (name && (!strcmp(name, "Gambatte") || !strcmp(name, "SameBoy")));
+   /* Mupen exposes host-endian uint32_t RDRAM, not CPU byte order. */
+   n64 = name && (strstr(name, "Mupen64Plus") != NULL);
+   if ((!gb && !n64) || !st->current_core.retro_get_memory_data
+         || !st->current_core.retro_get_memory_size)
+      return 0;
+
+   ram->data = (const uint8_t*)st->current_core.retro_get_memory_data(
+         RETRO_MEMORY_SYSTEM_RAM);
+   ram->size = st->current_core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
+   ram->base = gb ? 0xC000u : 0x80000000u;
+   ram->byte_xor = n64 && is_little_endian() ? 3 : 0;
+   if (!ram->data || !ram->size || ram->size > (gb ? 0x8000u : 0x800000u)
+         || (n64 && (ram->size & 3)))
+      return 0;
+   return 1;
+}
+
+static int cb_copy_system_ram(const cb_ram_t *ram,
+      uint32_t address, uint32_t len, uint8_t *dst)
+{
+   size_t offset, i;
+   if (address < ram->base)
+      return 0;
+   offset = (size_t)(address - ram->base);
+   if (offset > ram->size || len > ram->size - offset)
+      return 0;
+   if (!ram->byte_xor)
+      memcpy(dst, ram->data + offset, len);
+   else
+      for (i = 0; i < len; i++)
+         dst[i] = ram->data[(offset + i) ^ ram->byte_xor];
+   return 1;
+}
 
 /* Same descriptor matching RetroArch's READ_CORE_MEMORY uses
  * (command.c), so addresses mean exactly the same thing. */
@@ -149,6 +205,8 @@ void companion_bridge_on_frame(void)
    unsigned i;
    runloop_state_t *runloop_st;
    const rarch_memory_map_t *mmap;
+   cb_ram_t ram;
+   int have_ram;
 
    /* Never stall emulation: if the UI thread is mid-copy, skip
     * this frame's snapshot. The UI just sees the previous frame. */
@@ -166,6 +224,7 @@ void companion_bridge_on_frame(void)
    cb_st.content_loaded = 1;
 
    mmap = &runloop_st->system.mmaps;
+   have_ram = mmap->num_descriptors == 0 && cb_system_ram(runloop_st, &ram);
 
    for (i = 0; i < cb_st.num_watches; i++)
    {
@@ -173,7 +232,8 @@ void companion_bridge_on_frame(void)
       cb_st.valid[i] = (mmap->num_descriptors > 0)
          ? (uint8_t)cb_copy_range(mmap, w->address, w->length,
                cb_st.snapshot + w->offset)
-         : 0;
+         : (have_ram ? (uint8_t)cb_copy_system_ram(&ram,
+               w->address, w->length, cb_st.snapshot + w->offset) : 0);
    }
 
    cb_st.frame++;

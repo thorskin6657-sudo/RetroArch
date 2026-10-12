@@ -9,6 +9,7 @@ public class CompanionTest {
   static native void nativeStep(int v);
   static native void nativeUnload();
   static native void nativeSetRom(String s);
+  static native void nativeMode(int mode);
 
   static int checks, fails;
   static void check(boolean c, String m) { checks++; if (!c) { fails++; System.out.println("FAIL: " + m); } }
@@ -186,6 +187,32 @@ public class CompanionTest {
     c.start(); ch.vsync();
     check(field(c, "presentation") == null, "COMPANION=false extra -> nothing");
 
+    // Missing memory-map descriptors use bounded system RAM only.
+    for (int mode : new int[]{1, 2, 3}) {
+      nativeMode(mode); poll(); frame(20);
+      int base = mode == 3 ? 0x80000000 : 0xC000;
+      int size = mode == 2 ? 0x8000 : 0x2000;
+      b.watch(base, 7); b.watch(base + 1, 6);
+      b.watch(base + size - 1, 1);
+      frame(21);
+      byte[] bytes = b.read(base, 7);
+      check(bytes != null, "fallback mode " + mode + " mapped");
+      if (bytes != null) for (int i = 0; i < bytes.length; i++)
+        check((bytes[i] & 255) == 21 + i, "CPU byte order mode " + mode + " byte " + i);
+      bytes = b.read(base + 1, 6);
+      check(bytes != null && (bytes[0] & 255) == 22 && (bytes[5] & 255) == 27,
+          "unaligned cross-word read mode " + mode);
+      check(b.u8(base + size - 1) == ((21 + size - 1) & 255), "last valid byte mode " + mode);
+      b.watch(base - 1, 1); b.watch(base + size - 1, 2); b.watch(0xFFFFFFFE, 4); frame(22);
+      check(b.read(base - 1, 1) == null, "below base mode " + mode);
+      check(b.read(base + size - 1, 2) == null, "crosses RAM end mode " + mode);
+      check(b.read(0xFFFFFFFE, 4) == null, "wrapped address rejected mode " + mode);
+    }
+    for (int mode : new int[]{4, 5, 6}) {
+      nativeMode(mode); poll(); frame(22); b.watch(0xC000, 4); b.watch(0x80000000, 4); frame(23);
+      check(b.read(0xC000, 4) == null && b.read(0x80000000, 4) == null,
+          "unknown/null/mapped core must not use fallback mode " + mode);
+    }
     System.out.println("JAVA RESULT: " + (fails == 0 ? "PASS" : "FAIL") + " (" + checks + " checks, " + fails + " failures)");
     System.exit(fails == 0 ? 0 : 1);
   }
